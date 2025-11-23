@@ -8,13 +8,13 @@ import numpy as np
 # CONFIGURATION APP
 # ------------------------------------------------------------------
 st.set_page_config(page_title="Détection Poubelle", layout="wide")
-st.title("🚮 Détection : Poubelle Pleine ou Vide (YOLOv8)")
-st.write("Analysez une image ou une vidéo pour déterminer si une poubelle est pleine ou vide.")
+st.markdown("<h1 style='text-align:center;color:#2C3E50;'>🚮 Détection : Poubelle Pleine ou Vide (YOLOv8)</h1>", unsafe_allow_html=True)
+st.write("<p style='text-align:center;color:gray;font-size:18px;'>Analysez une image ou une vidéo pour déterminer si une poubelle est pleine ou vide.</p>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
 # CHARGEMENT MODELE YOLO
 # ------------------------------------------------------------------
-MODEL_PATH = "yolov8s.pt"     # Mets ici ton modèle entraîné
+MODEL_PATH = "best.pt"
 model = YOLO(MODEL_PATH)
 
 st.sidebar.title("📂 Options")
@@ -27,7 +27,6 @@ def analyze_image(img):
     results = model(img)[0]
     annotated_img = results.plot()
 
-    # Récupérer la prédiction texte (classe)
     if len(results.boxes.cls) > 0:
         cls_id = int(results.boxes.cls[0])
         class_name = model.names[cls_id]
@@ -35,6 +34,7 @@ def analyze_image(img):
         class_name = "Aucune poubelle détectée"
 
     return annotated_img, class_name
+
 
 # ------------------------------------------------------------------
 # MODE IMAGE
@@ -50,11 +50,39 @@ if mode == "Image":
 
         st.image(img_rgb, caption="Image importée", use_column_width=True)
 
-        if st.button("🔍 Analyser l'image"):
-            annotated, prediction = analyze_image(img_rgb)
+        # Analyse automatique dès l'upload
+        annotated, prediction = analyze_image(img_rgb)
 
-            st.subheader("📌 Résultat")
-            st.image(annotated, caption=f"Prédiction : {prediction}", use_column_width=True)
+        st.subheader("📌 Résultat")
+        st.image(annotated, use_column_width=True)
+
+        # ------------------------------
+        #  AFFICHAGE PRÉDICTION EN GRAND
+        # ------------------------------
+        if prediction.lower() == "pleine":
+            color = "#e74c3c"   # rouge
+        elif prediction.lower() == "vide":
+            color = "#27ae60"   # vert
+        else:
+            color = "#f1c40f"   # jaune
+
+        st.markdown(
+            f"""
+            <div style="
+                text-align:center;
+                margin-top:20px;
+                background-color:#ecf0f1;
+                padding:20px;
+                border-radius:12px;
+            ">
+                <h1 style="color:#27ae60; font-size:25px; font-weight:700;">
+                    {prediction.upper()}
+                </h1>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 # ------------------------------------------------------------------
 # MODE VIDEO
@@ -76,6 +104,8 @@ elif mode == "Vidéo":
             cap = cv2.VideoCapture(video_path)
             frame_placeholder = st.empty()
 
+            last_prediction = "Analyse en cours..."
+
             while True:
                 ret, frame = cap.read()
                 if not ret:
@@ -87,8 +117,18 @@ elif mode == "Vidéo":
 
                 frame_placeholder.image(annotated_frame, use_column_width=True)
 
+                # Récupérer dernière prédiction
+                if len(results.boxes.cls) > 0:
+                    cls_id = int(results.boxes.cls[0])
+                    last_prediction = model.names[cls_id]
+
             cap.release()
+
             st.success("Analyse terminée ✔")
+
+            # Affichage grand format
+            st.markdown(f"<h1 style='text-align:center;color:green;'>{last_prediction.upper()}</h1>", unsafe_allow_html=True)
+
 
 # ------------------------------------------------------------------
 # BOUTON TELECHARGER LE MODELE
