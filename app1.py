@@ -137,6 +137,6 @@ with st.sidebar:
     st.download_button(
         label="⬇ Télécharger le modèle YOLO",
         data=open(MODEL_PATH, "rb").read(),
-        file_name="best.pt",
+        file_name="detection_poubelle.pt",
         mime="application/octet-stream"
     )
